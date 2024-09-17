@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import Map from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
-import { Geolocation } from '@capacitor/geolocation';
 import Graphic from '@arcgis/core/Graphic';
-import Point from '@arcgis/core/geometry/Point'; // Import Point geometry
+import Point from '@arcgis/core/geometry/Point';
+import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
+import ImageryLayer from '@arcgis/core/layers/ImageryLayer';
 
 @Component({
   selector: 'app-home',
@@ -11,53 +12,62 @@ import Point from '@arcgis/core/geometry/Point'; // Import Point geometry
   styleUrls: ['home.page.scss'],
 })
 export class HomePage implements OnInit {
-
-  latitude: number | any;
-  longitude: number | any;
+  MapView: MapView | any;
+  UserLocationGraphic: Graphic | any;
+  map: Map | any;
 
   constructor() {}
 
-  public async ngOnInit(): Promise<void> {
-    const position = await Geolocation.getCurrentPosition();
-    this.latitude = position.coords.latitude;
-    this.longitude = position.coords.longitude;
-
-    const map = new Map({
-      basemap: "topo-vector" // Reference to the base of the map
+  async ngOnInit() {
+    this.map = new Map({
+      basemap: "topo-vector"  // default basemap
     });
 
-    const view = new MapView({
-      container: "container", // Reference to the view div created
-      map: map, // Reference to the map object created before the view
-      zoom: 10, // Sets zoom level based on level of detail (LOD)
-      center: [this.longitude, this.latitude] // Center map on the user's location
+    this.MapView = new MapView({
+      container: 'container',
+      map: this.map,
+      zoom: 5,
+      center: [0, 0]
     });
 
-    // Define the star-shaped marker symbol
-    const markerSymbol = {
-      type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
-      style: "star", // Shape of the marker
-      color: [255, 105, 180], // Pink color
-      size: 16, // Larger size for better visibility
-      outline: {
-        color: [255, 255, 255], // White outline
-        width: 2
-      }
-    };
+    let weatherServiceFL = new ImageryLayer({
+      url: WeatherServiceUrl
+    });
+    this.map.add(weatherServiceFL);
 
-    // Create a point geometry for the user's location
-    const point = new Point({
-      longitude: this.longitude,
-      latitude: this.latitude
+    await this.updateUserLocationOnMap();
+    this.MapView.center = this.UserLocationGraphic.geometry;
+  }
+
+  async getLocationService(): Promise<number[]> {
+    return new Promise((resolve) => {
+      resolve([34.0007, -81.0348]); // Latitude dan Longitude untuk Columbia, SC
+    });
+  }
+
+  async updateUserLocationOnMap() {
+    const latLng = await this.getLocationService();
+    let geom = new Point({
+      latitude: latLng[0],
+      longitude: latLng[1]
     });
 
-    // Create a graphic with the point and marker symbol
-    const pointGraphic = new Graphic({
-      geometry: point, // Use the Point geometry
-      symbol: markerSymbol
-    });
+    if (this.UserLocationGraphic) {
+      this.UserLocationGraphic.geometry = geom;
+    } else {
+      this.UserLocationGraphic = new Graphic({
+        symbol: new SimpleMarkerSymbol(),
+        geometry: geom
+      });
+    }
+    this.MapView.graphics.add(this.UserLocationGraphic);
+  }
 
-    // Add the graphic (star-shaped marker) to the map view
-    view.graphics.add(pointGraphic);
+  // Fungsi untuk mengubah basemap
+  onBasemapChange(event: any) {
+    const selectedBasemap = event.detail.value;
+    this.map.basemap = selectedBasemap;
   }
 }
+
+const WeatherServiceUrl = 'https://mapservices.weather.noaa.gov/eventdriven/rest/services/radar/radar_base_reflectivity_time/ImageServer';

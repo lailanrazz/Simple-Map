@@ -6,12 +6,19 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Lela's Map</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content>
+  <!-- Dropdown untuk memilih basemap -->
+  <ion-item>
+    <ion-label>Basemap</ion-label>
+    <ion-select (ionChange)="onBasemapChange($event)" placeholder="Select Basemap">
+      <ion-select-option value="topo-vector">Topographic</ion-select-option>
+      <ion-select-option value="streets">Streets</ion-select-option>
+      <ion-select-option value="satellite">Satellite</ion-select-option>
+      <ion-select-option value="hybrid">Hybrid</ion-select-option>
+      <ion-select-option value="terrain">Terrain</ion-select-option>
+    </ion-select>
+  </ion-item>
 
-  <div id="container"></div>
+  <!-- Kontainer peta -->
+  <div id="container" style="width: 100%; height: 100vh;"></div>
 </ion-content>
